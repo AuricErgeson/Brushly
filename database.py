@@ -12,8 +12,8 @@ engine = create_engine(
 
 
 def init_db() -> None:
-    # Import models so SQLModel registers them before creating tables.
-    from models import BrushEvent  # noqa: F401
+
+    from models import BrushEvent
 
     SQLModel.metadata.create_all(engine)
 
