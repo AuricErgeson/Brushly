@@ -1,0 +1,37 @@
+{
+  "summary": "Full backend + frontend test run for Brushly. 14/14 pytest tests passing against the public preview URL. Playwright UI tests passing on desktop (1280x900) and mobile (414x896): brand, streak, morning/evening logging with toasts, calendar coloring level-1 -> level-2, per-day (not per-event) streak logic, month nav, reload persistence, and no horizontal overflow on mobile.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_brushly.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Naive datetime usage: BrushEvent.timestamp uses datetime.now() (local naive). If the server is in a different TZ than the user, 'today' in /api/streak (server side, date.today()) and the JS 'today' (client side, new Date()) can disagree near midnight. Consider storing UTC and computing 'today' from a client-supplied date or X-Timezone header. Not blocking for MVP.",
+    "GET '/' through the Kubernetes ingress in this preview env is routed to a separate React container, not to FastAPI. The FastAPI '@app.get(\"/\")' handler works locally on :8001 (verified) but is unreachable via the public URL. This is an env quirk, not a code bug; /api/ correctly serves the Brushly HTML.",
+    "/api/history validates month bounds but the year check only catches absurd ranges (1970..9999); year=2025, month=2 with day=30 etc. is fine here because we only use year/month for range. No real issue.",
+    "init_db() is called at module import time. Acceptable for SQLite + this scale, but for multi-worker setups prefer an explicit FastAPI startup event.",
+    "CORS is wide-open (allow_origins=['*']); fine for this MVP."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_brushly.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14)",
+    "frontend": "100% (all critical flows: load, brand, streak, morning/evening, calendar coloring level-1/level-2, per-day streak, prev/next nav, reload persistence, mobile no-overflow, button tap-size)"
+  },
+  "test_credentials": "n/a (no auth)",
+  "seed_data_creation": "Cleared /app/brushly.db SQLite table before the UI run. Backend test suite repopulates a few rows; final state after the full run: 2 events on today's date.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Use BASE_URL=https://floss-flow.preview.emergentagent.com. Frontend lives at BASE_URL/api/ (NOT root) due to ingress routing root -> React container. Pytest file: /app/backend/tests/test_brushly.py. To reset state: `python -c \"from sqlmodel import Session, delete; from database import engine; from models import BrushEvent;\\nimport sys;\\nfrom sqlalchemy import text;\" -- or simply: from sqlmodel import Session, delete; with Session(engine) as s: s.exec(delete(BrushEvent)); s.commit()`. The 'today' day cell testid format is day-YYYY-MM-DD; coloring classes are level-0|1|2 plus 'today'.",
+  "rca of the issue": "No issues found."
+}
